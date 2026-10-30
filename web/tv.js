@@ -493,11 +493,12 @@ var TV = (function () {
         return;
       }
       function list(res) {
-        var out = [];
+        var out = [], seen = {};
         var points = res && res.launchPoints ? res.launchPoints : [];
         for (var i = 0; i < points.length; i++) {
           var p = points[i];
-          if (!p.id || p.id === self || HIDDEN.test(p.id)) continue;
+          if (!p.id || p.id === self || HIDDEN.test(p.id) || seen[p.id]) continue;
+          seen[p.id] = true;   // a saved web page shares the browser's id, and launch opens by id
           out.push({id: p.id, title: p.title || p.id, icon: p.largeIcon || p.icon || '', color: p.bgColor || p.iconColor || ''});
         }
         return out;
