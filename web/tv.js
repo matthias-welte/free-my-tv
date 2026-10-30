@@ -497,8 +497,11 @@ var TV = (function () {
         var points = res && res.launchPoints ? res.launchPoints : [];
         for (var i = 0; i < points.length; i++) {
           var p = points[i];
-          if (!p.id || p.id === self || HIDDEN.test(p.id) || seen[p.id]) continue;
-          seen[p.id] = true;   // a saved web page shares the browser's id, and launch opens by id
+          if (!p.id || p.id === self || HIDDEN.test(p.id)) continue;
+          // A saved web page shares the browser's id and launch opens by id; LG also lists some apps more than once.
+          var key = p.id + '|' + (p.title || '').toLowerCase();
+          if (seen[p.id] || seen[key]) continue;
+          seen[p.id] = seen[key] = true;
           out.push({id: p.id, title: p.title || p.id, icon: p.largeIcon || p.icon || '', color: p.bgColor || p.iconColor || ''});
         }
         return out;
