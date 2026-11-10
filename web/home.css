@@ -462,6 +462,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .night #prices .down { color: #FF453A; background: rgba(255, 69, 58, 0.2); }
 
 #departures .cond { position: absolute; left: 34px; top: 96px; font-size: 26px; font-weight: 500; color: #8E8E93; }
+#departures .why { position: absolute; left: 34px; top: 150px; font-size: 22px; color: #8E8E93; }
 #departures .dir { position: absolute; top: 74px; bottom: 20px; }
 #departures .to { position: absolute; left: 0; right: 0; top: 0; font-size: 22px; font-weight: 500; color: #6E6E73; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #departures .dep { position: absolute; left: 0; right: 0; height: 48px; line-height: 48px; font-size: 28px; font-weight: 500; white-space: nowrap; -webkit-font-feature-settings: 'tnum'; font-feature-settings: 'tnum'; }

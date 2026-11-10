@@ -679,7 +679,8 @@
     var groups = Data.departures, stale = Data.staleness(Data.departuresAt, 60000);
     if (stale) el('div', 'side', card, stale);
     if (!groups) {
-      el('div', 'cond', card, tr('No departures right now.')).style.top = '96px';
+      el('div', 'cond', card, tr('No departures right now.'));
+      if (Data.departuresError) el('div', 'why', card, Data.departuresError);
       return;
     }
     var width = parseFloat(card.style.width) - 68, cw = width / groups.length, now = Date.now();

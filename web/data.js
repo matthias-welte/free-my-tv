@@ -319,7 +319,7 @@ var Data = (function () {
   var TRANSIT = {key: CONFIG.rmvKey || '', stop: CONFIG.rmvStop || '', directions: CONFIG.rmvDirections || [],
     lines: (CONFIG.rmvLines || []).map(function (l) { return String(l).toLowerCase(); }), max: CONFIG.rmvMax > 0 ? CONFIG.rmvMax : 2};
   var transitOn = !!(TRANSIT.key && TRANSIT.stop && TRANSIT.directions.length);
-  var departures = null, departuresAt = 0, fetchingDepartures = false;
+  var departures = null, departuresAt = 0, fetchingDepartures = false, departuresError = '';
 
   /** "2026-11-10" and "14:05:00" at the stop (the TV's clock is taken to be there) → epoch ms. */
   function departureTime(date, time) {
@@ -374,7 +374,9 @@ var Data = (function () {
         + '&duration=90&maxJourneys=60&passlist=1&format=json', {}, function (err, body) {
       fetchingDepartures = false;
       var groups = err ? null : parseDepartures(body, Date.now());
-      if (!groups) return;   // the last ones stay, marked as old
+      // What went wrong, for the panel (never the key): RMV's error code, or the request's.
+      departuresError = groups ? '' : err ? err.message : body && body.errorCode ? body.errorCode : 'no answer';
+      if (!groups) { changed(); return; }   // the last ones stay, marked as old
       departures = groups;
       departuresAt = Date.now();
       store('departures', {stop: TRANSIT.stop, groups: groups, at: departuresAt});
@@ -730,6 +732,7 @@ var Data = (function () {
     transit: transitOn,
     get departures() { return departures; },
     get departuresAt() { return departuresAt; },
+    get departuresError() { return departuresError; },
     activeCoins: activeCoins,
     hasKey: function () { return !!KEY; },
     checkKey: checkKey,
