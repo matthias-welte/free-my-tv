@@ -618,7 +618,20 @@
     var d = $('drawer');
     var old = d.querySelectorAll('.panel');
     for (var o = 0; o < old.length; o++) d.removeChild(old[o]);
+    var up = $('top'), above = up.querySelector('.panel');
+    if (above) up.removeChild(above);
     var wx = Prefs.weather(), coins = Data.activeCoins(), qt = coins.length > 0, rmv = Data.transit;
+    // Where the picks would be, when there are none: the departures take that room, and leave the drawer.
+    var onTop = rmv && !Data.picks(TAB_KIND[st.tab]).length;
+    if (onTop) {
+      var t = el('div', 'panel glass', up);
+      t.id = 'departures';
+      t.style.top = '262px';
+      t.style.left = '600px';   // right of the big clock, which fills this room without picks
+      t.style.width = '1240px';
+      renderDepartures(t);
+      rmv = false;
+    }
     var split = 80 + 1760 * 0.585;
     if (wx) {
       var w = el('div', 'panel glass', d);
