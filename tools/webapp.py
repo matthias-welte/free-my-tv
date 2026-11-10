@@ -15,7 +15,8 @@ import translate  # noqa: E402  (the catalogues and the keys the web app uses)
 
 GENERIC = {'tmdbKey': '', 'tmdbRegion': '', 'latitude': '', 'longitude': '', 'city': '', 'language': 'auto',
            'currency': '', 'temperature': 'auto', 'theme': 'auto', 'showCrypto': True, 'hideAnimation': False, 'hideApps': [],
-           'shelfApps': [], 'drawerFirst': False}
+           'shelfApps': [], 'drawerFirst': False, 'rmvKey': '', 'rmvStop': '', 'rmvStopName': '',
+           'rmvDirections': [], 'rmvLines': [], 'rmvMax': 2}
 
 
 def config_from_args(args):
@@ -66,7 +67,23 @@ def read_config(path):
         'hideApps': [s.strip() for s in values.get('hide_apps', '').split(',') if s.strip()],
         'shelfApps': [s.strip() for s in values.get('shelf_apps', '').split(',') if s.strip()],
         'drawerFirst': values.get('drawer_first', 'false').lower() == 'true',
+        'rmvKey': values.get('rmv_key', ''),
+        'rmvStop': values.get('rmv_stop', ''),
+        'rmvStopName': values.get('rmv_stop_name', ''),
+        'rmvDirections': directions(values.get('rmv_directions', '')),
+        'rmvLines': [s.strip() for s in values.get('rmv_lines', '').split(',') if s.strip()],
+        'rmvMax': int(number('rmv_max', '2')),
     }
+
+
+def directions(text):
+    """rmv_directions: "Hauptbahnhof,Flughafen Regionalbahnhof=Flughafen" → [{match, label}] (the label defaults to the text)."""
+    out = []
+    for part in text.split(','):
+        match, _, label = part.partition('=')
+        if match.strip():
+            out.append({'match': match.strip(), 'label': label.strip() or match.strip()})
+    return out
 
 
 def coins():

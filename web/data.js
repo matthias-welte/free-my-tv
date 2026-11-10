@@ -312,6 +312,76 @@ var Data = (function () {
     })(0);
   }
 
+  // MARK: - Departures (RMV)
+
+  // rmv_* in config.properties: the stop's next departures toward each direction (a direction is a stop name, or part
+  // of one, that the journey reaches after this stop). Without the key, the stop and a direction, nothing is asked.
+  var TRANSIT = {key: CONFIG.rmvKey || '', stop: CONFIG.rmvStop || '', directions: CONFIG.rmvDirections || [],
+    lines: (CONFIG.rmvLines || []).map(function (l) { return String(l).toLowerCase(); }), max: CONFIG.rmvMax > 0 ? CONFIG.rmvMax : 2};
+  var transitOn = !!(TRANSIT.key && TRANSIT.stop && TRANSIT.directions.length);
+  var departures = null, departuresAt = 0, fetchingDepartures = false;
+
+  /** "2026-11-10" and "14:05:00" at the stop (the TV's clock is taken to be there) → epoch ms. */
+  function departureTime(date, time) {
+    var d = /^(\d+)-(\d+)-(\d+)$/.exec(date || ''), t = /^(\d+):(\d+)/.exec(time || '');
+    return d && t ? new Date(+d[1], d[2] - 1, +d[3], +t[1], +t[2]).getTime() : 0;
+  }
+
+  /** The answer's departures sorted into the directions: [{label, items: [{line, at, late, cancelled}]}], or null. */
+  function parseDepartures(body, now) {
+    if (!body || body.errorCode) return null;
+    var list = body.Departure || [], groups = [];
+    for (var g = 0; g < TRANSIT.directions.length; g++) groups.push({label: TRANSIT.directions[g].label, items: []});
+    for (var i = 0; i < list.length; i++) {
+      var d = list[i], p = d.ProductAtStop || (d.Product && d.Product[0]) || {};
+      var line = String(p.line || p.num || d.name || '');
+      if (TRANSIT.lines.length && TRANSIT.lines.indexOf(line.toLowerCase()) < 0) continue;
+      var planned = departureTime(d.date, d.time), real = d.rtTime ? departureTime(d.rtDate || d.date, d.rtTime) : planned;
+      if (!planned || real < now - 60000) continue;
+      // Where on the journey each direction first shows up: the stops after this one, then where it ends.
+      var stops = d.Stops && d.Stops.Stop ? [].concat(d.Stops.Stop) : [], names = [];
+      for (var k = 0; k < stops.length; k++) names.push(String(stops[k].name || '').toLowerCase());
+      names.push(String(d.direction || '').toLowerCase());
+      var best = -1, bestAt = 1e9;
+      for (var j = 0; j < TRANSIT.directions.length; j++) {
+        var needle = TRANSIT.directions[j].match.toLowerCase();
+        for (var n = 0; n < names.length; n++) {
+          if (names[n].indexOf(needle) >= 0) { if (n < bestAt) { best = j; bestAt = n; } break; }
+        }
+      }
+      if (best < 0) continue;
+      groups[best].items.push({line: line, at: real, late: Math.round((real - planned) / 60000),
+        cancelled: d.cancelled === true || d.cancelled === 'true'});
+    }
+    for (var q = 0; q < groups.length; q++) {
+      groups[q].items.sort(function (a, b) { return a.at - b.at; });
+      groups[q].items = groups[q].items.slice(0, TRANSIT.max);
+    }
+    return groups;
+  }
+
+  (function () {
+    var s = stored('departures');
+    if (transitOn && s && s.stop === TRANSIT.stop && s.groups) { departures = s.groups; departuresAt = s.at; }
+  })();
+
+  function refreshDepartures() {
+    var now = Date.now();
+    if (!transitOn || fetchingDepartures || (now - departuresAt < 60000 && now >= departuresAt)) return;
+    fetchingDepartures = true;
+    // passlist: each departure's following stops, which say where it goes besides where it ends.
+    get('https://www.rmv.de/hapi/departureBoard?accessId=' + encodeURIComponent(TRANSIT.key) + '&id=' + encodeURIComponent(TRANSIT.stop)
+        + '&duration=90&maxJourneys=60&passlist=1&format=json', {}, function (err, body) {
+      fetchingDepartures = false;
+      var groups = err ? null : parseDepartures(body, Date.now());
+      if (!groups) return;   // the last ones stay, marked as old
+      departures = groups;
+      departuresAt = Date.now();
+      store('departures', {stop: TRANSIT.stop, groups: groups, at: departuresAt});
+      changed();
+    });
+  }
+
   // MARK: - Picks (TMDB)
 
   var KEY = Prefs.tmdbKey();
@@ -647,7 +717,7 @@ var Data = (function () {
     appFor: appFor,
     usable: usable,
     services: services,
-    refresh: function () { refreshWeather(); refreshPrices(); refreshRecs(); },
+    refresh: function () { refreshWeather(); refreshPrices(); refreshDepartures(); refreshRecs(); },
     settingsChanged: function () { pricesAt = 0; refreshPrices(); changed(); },
     findCity: findCity,
     /** Another city picked: its weather now (none shown until it comes). */
@@ -657,6 +727,9 @@ var Data = (function () {
     prices: prices,
     changes: changes,
     get pricesAt() { return pricesAt; },
+    transit: transitOn,
+    get departures() { return departures; },
+    get departuresAt() { return departuresAt; },
     activeCoins: activeCoins,
     hasKey: function () { return !!KEY; },
     checkKey: checkKey,

@@ -618,16 +618,23 @@
     var d = $('drawer');
     var old = d.querySelectorAll('.panel');
     for (var o = 0; o < old.length; o++) d.removeChild(old[o]);
-    var wx = Prefs.weather(), coins = Data.activeCoins(), qt = coins.length > 0;
+    var wx = Prefs.weather(), coins = Data.activeCoins(), qt = coins.length > 0, rmv = Data.transit;
     var split = 80 + 1760 * 0.585;
     if (wx) {
       var w = el('div', 'panel glass', d);
       w.id = 'weather';
       w.style.left = '80px';
-      w.style.width = ((qt ? split - 16 : 1840) - 80) + 'px';
+      w.style.width = (((qt || rmv) ? split - 16 : 1840) - 80) + 'px';
       renderWeather(w);
     }
-    if (qt) {
+    if (rmv) {   // rmv_* in config.properties: the departures take the prices' place (the quotes strip above keeps them)
+      var r = el('div', 'panel glass', d);
+      r.id = 'departures';
+      var from = wx ? split + 16 : 80;
+      r.style.left = from + 'px';
+      r.style.width = (1840 - from) + 'px';
+      renderDepartures(r);
+    } else if (qt) {
       var q = el('div', 'panel glass', d);
       q.id = 'prices';
       var left = wx ? split + 16 : 80;
@@ -665,6 +672,32 @@
     var sun = el('div', 'sun', card);
     if (w.sunrise) { var a = el('span', '', sun); sym('sunrise', a); a.appendChild(document.createTextNode(trf('Sunrise {time}', {time: Data.time(w.sunrise)}))); }
     if (w.sunset) { var b = el('span', '', sun); sym('sunset', b); b.appendChild(document.createTextNode(trf('Sunset {time}', {time: Data.time(w.sunset)}))); }
+  }
+
+  function renderDepartures(card) {
+    el('div', 'head', card, tr('Departures'));
+    var groups = Data.departures, stale = Data.staleness(Data.departuresAt, 60000);
+    if (stale) el('div', 'side', card, stale);
+    if (!groups) {
+      el('div', 'cond', card, tr('No departures right now.')).style.top = '96px';
+      return;
+    }
+    var width = parseFloat(card.style.width) - 68, cw = width / groups.length, now = Date.now();
+    for (var g = 0; g < groups.length; g++) {
+      var col = el('div', 'dir', card);
+      col.style.left = (34 + cw * g) + 'px';
+      col.style.width = (cw - 24) + 'px';
+      el('div', 'to', col, groups[g].label);
+      var items = groups[g].items;
+      if (!items.length) el('div', 'none', col, '—');
+      for (var i = 0; i < items.length; i++) {
+        var x = items[i], row = el('div', 'dep' + (x.cancelled ? ' off' : x.late > 0 ? ' late' : ''), col);
+        row.style.top = (50 + 62 * i) + 'px';
+        el('span', 'ln', row, x.line);
+        var m = Math.max(0, Math.round((x.at - now) / 60000));
+        el('span', 'min', row, m === 0 ? tr('now') : m < 60 ? trf('{n} min', {n: m}) : Data.time(x.at));
+      }
+    }
   }
 
   function renderPrices(card, coins) {
@@ -1686,6 +1719,7 @@
   setInterval(function () {
     checkNight();
     Data.refresh();
+    if (Data.transit) renderPanels();   // the minutes to each departure
     applyDim();   // automatic: medium from 22:00, off again at 07:00
     if (!saverOn && !ambientOn && !sheetOpen() && Date.now() - idleAt > SAVER_AFTER) {
       if (saverMode() === 'clock') showAmbient(); else showSaver();

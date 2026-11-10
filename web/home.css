@@ -461,6 +461,19 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .night #prices .up { color: #30D158; background: rgba(48, 209, 88, 0.2); }
 .night #prices .down { color: #FF453A; background: rgba(255, 69, 58, 0.2); }
 
+#departures .cond { position: absolute; left: 34px; top: 96px; font-size: 26px; font-weight: 500; color: #8E8E93; }
+#departures .dir { position: absolute; top: 74px; bottom: 20px; }
+#departures .to { position: absolute; left: 0; right: 0; top: 0; font-size: 22px; font-weight: 500; color: #6E6E73; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#departures .dep { position: absolute; left: 0; right: 0; height: 48px; line-height: 48px; font-size: 28px; font-weight: 500; white-space: nowrap; -webkit-font-feature-settings: 'tnum'; font-feature-settings: 'tnum'; }
+#departures .dep .ln { position: absolute; left: 0; top: 6px; min-width: 62px; height: 36px; line-height: 36px; padding: 0 10px; border-radius: 10px; text-align: center; font-size: 24px; font-weight: 700; background: rgba(0, 0, 0, 0.08); }
+#departures .dep .min { position: absolute; right: 0; top: 0; }
+#departures .dep.late .min { color: #D70015; }
+#departures .dep.off { text-decoration: line-through; color: #8E8E93; }
+#departures .none { position: absolute; left: 0; top: 56px; font-size: 28px; color: #8E8E93; }
+.night #departures .to { color: rgba(255, 255, 255, 0.68); }
+.night #departures .dep .ln { background: rgba(255, 255, 255, 0.16); }
+.night #departures .dep.late .min { color: #FF453A; }
+
 /* MARK: - Sheets over the home screen: All Apps, Settings, Shelf, Language, About */
 
 .sheet {
